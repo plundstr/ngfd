@@ -66,9 +66,11 @@ static void              disconnect_from_pulseaudio ();
 static void              retry_connect              ();
 static void              get_address_reply_cb       (DBusPendingCall *pending, void *data);
 
+
 #define DO_DEBUG 1
 #ifdef DO_DEBUG
-#define PLU_DEBUG(...) fprintf(stderr, __VA_ARGS__) 
+#include <stdio.h>
+#define PLU_DEBUG(...) printf(__VA_ARGS__) 
 #else
 #define PLU_DEBUG(...) 
 #endif
