@@ -66,11 +66,19 @@ static void              disconnect_from_pulseaudio ();
 static void              retry_connect              ();
 static void              get_address_reply_cb       (DBusPendingCall *pending, void *data);
 
+#define DO_DEBUG 1
+#ifdef DO_DEBUG
+#define PLU_DEBUG(...) fprintf(stderr, __VA_ARGS__) 
+#else
+#define PLU_DEBUG(...) 
+#endif
+
 
 static void
 retry_connect()
 {
-    volume_retry_id = g_timeout_add_seconds(RETRY_TIMEOUT,
+   PLU_DEBUG("%s()\n", __FUNCTION__);
+   volume_retry_id = g_timeout_add_seconds(RETRY_TIMEOUT,
                                             retry_timeout_cb, NULL);
 }
 
@@ -84,7 +92,7 @@ get_address_reply_cb(DBusPendingCall *pending, void *data)
     DBusMessage *msg = NULL;
 
     (void) data;
-
+    PLU_DEBUG("%s()\n", __FUNCTION__);
     msg = dbus_pending_call_steal_reply(pending);
     if (!msg) {
         N_WARNING(LOG_CAT "Could not get reply from pending call.");
@@ -135,7 +143,7 @@ static gboolean
 retry_timeout_cb (gpointer userdata)
 {
     (void) userdata;
-
+    PLU_DEBUG("%s()\n", __FUNCTION__);
     N_DEBUG (LOG_CAT "Retry connecting to PulseAudio");
 
     disconnect_from_pulseaudio ();
@@ -149,7 +157,7 @@ filter_cb (DBusConnection *connection, DBusMessage *msg, void *data)
 {
     (void) connection;
     (void) data;
-
+    PLU_DEBUG("%s()\n", __FUNCTION__);
     if (dbus_message_has_interface (msg, DBUS_INTERFACE_LOCAL) &&
         dbus_message_has_path      (msg, DBUS_PATH_LOCAL) &&
         dbus_message_has_member    (msg, DISCONNECTED_SIG))
@@ -177,7 +185,7 @@ append_volume (DBusMessageIter *iter, guint volume)
 
     dbus_uint32_t pos = 0;
     dbus_uint32_t vol = volume;
-
+    PLU_DEBUG("%s()\n", __FUNCTION__);
     dbus_message_iter_open_container  (iter, DBUS_TYPE_ARRAY, "(uu)", &array);
     dbus_message_iter_open_container  (&array, DBUS_TYPE_STRUCT, NULL, &str);
 
@@ -200,7 +208,7 @@ add_entry (const char *role, guint volume)
     dbus_uint32_t    vol     = 0;
     DBusMessageIter  iter;
     DBusError        error;
-
+    PLU_DEBUG("%s()\n", __FUNCTION__);
     if (!volume_bus || !role)
         return FALSE;
 
@@ -249,7 +257,7 @@ static void
 process_queued_ops ()
 {
     QueueItem *queued_volume = NULL;
-
+    PLU_DEBUG("%s()\n", __FUNCTION__);
     while ((queued_volume = g_queue_pop_head (volume_queue)) != NULL) {
         N_DEBUG (LOG_CAT "processing queued volume for role '%s', volume %d ",
             queued_volume->role, queued_volume->volume);
@@ -264,7 +272,7 @@ static gboolean
 connect_peer_to_peer()
 {
     DBusError   error;
-
+    PLU_DEBUG("%s()\n", __FUNCTION__);
     dbus_error_init (&error);
     volume_bus = dbus_connection_open (volume_pulse_address, &error);
 
@@ -295,7 +303,7 @@ connect_get_address()
     DBusPendingCall *pending = NULL;
     const char *iface = PULSE_LOOKUP_IF;
     const char *addr = PULSE_LOOKUP_ADDRESS;
-
+    PLU_DEBUG("%s()\n", __FUNCTION__);
     dbus_error_init (&error);
 
     if (volume_session_bus && !dbus_connection_get_is_connected(volume_session_bus)) {
@@ -358,7 +366,7 @@ connect_to_pulseaudio ()
 {
     const char *pulse_address = NULL;
     gboolean success;
-
+    PLU_DEBUG("%s()\n", __FUNCTION__);
     if (!volume_pulse_address && (pulse_address = getenv ("PULSE_DBUS_SERVER")))
         volume_pulse_address = g_strdup(pulse_address);
 
@@ -374,6 +382,7 @@ connect_to_pulseaudio ()
 static void
 disconnect_from_pulseaudio ()
 {
+    PLU_DEBUG("%s()\n", __FUNCTION__);
     if (volume_retry_id > 0) {
         g_source_remove (volume_retry_id);
         volume_retry_id = 0;
@@ -388,6 +397,7 @@ disconnect_from_pulseaudio ()
 int
 volume_controller_initialize ()
 {
+    PLU_DEBUG("%s()\n", __FUNCTION__);
     if ((volume_queue = g_queue_new ()) == NULL)
         return FALSE;
 
@@ -401,6 +411,7 @@ volume_controller_initialize ()
 void
 volume_controller_shutdown ()
 {
+    PLU_DEBUG("%s()\n", __FUNCTION__);
     disconnect_from_pulseaudio ();
 
     if (volume_queue) {
@@ -423,7 +434,7 @@ int
 volume_controller_update (const char *role, int volume)
 {
     QueueItem *item = NULL;
-
+    PLU_DEBUG("%s()\n", __FUNCTION__);
     if (!role)
         return FALSE;
 
